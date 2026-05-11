@@ -80,7 +80,7 @@ export function BookingForm({ service, availability }: Props) {
         body: JSON.stringify({ serviceId: service.id, bookedAt }),
       })
       const data = await res.json()
-      if (data.url) router.push(data.url)
+      if (data.url) window.location.href = data.url
     } finally {
       setLoading(false)
     }
