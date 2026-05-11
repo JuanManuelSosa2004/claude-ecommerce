@@ -15,10 +15,9 @@ export default async function ServicioPage({ params }: Props) {
     .from('services')
     .select('*')
     .eq('slug', slug)
-    .eq('is_active', true)
     .single()
 
-  if (!service) notFound()
+  if (!service || !service.is_active) notFound()
 
   const { data: availability } = await supabase
     .from('availability')
