@@ -2,6 +2,10 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Navbar } from '@/components/shared/Navbar'
 import { BookingForm } from '@/components/turnos/BookingForm'
+import type { Database } from '@/lib/supabase/types'
+
+type ServiceRow = Database['public']['Tables']['services']['Row']
+type AvailabilityRow = Database['public']['Tables']['availability']['Row']
 
 interface Props {
   params: Promise<{ slug: string }>
@@ -11,18 +15,22 @@ export default async function ServicioPage({ params }: Props) {
   const { slug } = await params
   const supabase = await createClient()
 
-  const { data: service } = await supabase
+  const { data } = await supabase
     .from('services')
     .select('*')
     .eq('slug', slug)
     .single()
 
-  if (!service || !service.is_active) notFound()
+  if (!data || !data.is_active) notFound()
 
-  const { data: availability } = await supabase
+  const service = data as ServiceRow
+
+  const { data: availabilityData } = await supabase
     .from('availability')
     .select('*')
     .eq('service_id', service.id)
+
+  const availability = (availabilityData ?? []) as AvailabilityRow[]
 
   return (
     <>
@@ -48,7 +56,7 @@ export default async function ServicioPage({ params }: Props) {
 
           <div>
             <h2 className="text-lg font-medium mb-4">Elegí tu turno</h2>
-            <BookingForm service={service} availability={availability ?? []} />
+            <BookingForm service={service} availability={availability} />
           </div>
         </div>
       </main>
