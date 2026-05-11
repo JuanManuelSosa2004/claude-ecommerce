@@ -8,20 +8,22 @@ import { Label } from '@/components/ui/label'
 import type { Database } from '@/lib/supabase/types'
 
 type Service = Database['public']['Tables']['services']['Row']
+type Availability = Database['public']['Tables']['availability']['Row']
 
 const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
 
 interface Props {
-  service: Service & { availability: Database['public']['Tables']['availability']['Row'][] }
+  service: Service
+  availability: Availability[]
 }
 
-export function BookingForm({ service }: Props) {
+export function BookingForm({ service, availability }: Props) {
   const router = useRouter()
   const [date, setDate] = useState('')
   const [time, setTime] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const availableDays = service.availability.map((a) => a.day_of_week)
+  const availableDays = availability.map((a) => a.day_of_week)
 
   // Fecha mínima: mañana
   const tomorrow = new Date()
@@ -36,7 +38,7 @@ export function BookingForm({ service }: Props) {
   const isDayAvailable = selectedDayOfWeek !== null && availableDays.includes(selectedDayOfWeek)
 
   // Horarios disponibles para el día seleccionado
-  const availabilityForDay = service.availability.find(
+  const availabilityForDay = availability.find(
     (a) => a.day_of_week === selectedDayOfWeek
   )
 

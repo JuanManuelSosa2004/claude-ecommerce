@@ -2,11 +2,6 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Navbar } from '@/components/shared/Navbar'
 import { BookingForm } from '@/components/turnos/BookingForm'
-import type { Database } from '@/lib/supabase/types'
-
-type ServiceWithAvailability = Database['public']['Tables']['services']['Row'] & {
-  availability: Database['public']['Tables']['availability']['Row'][]
-}
 
 interface Props {
   params: Promise<{ slug: string }>
@@ -16,23 +11,25 @@ export default async function ServicioPage({ params }: Props) {
   const { slug } = await params
   const supabase = await createClient()
 
-  const { data } = await supabase
+  const { data: service } = await supabase
     .from('services')
-    .select('*, availability(*)')
+    .select('*')
     .eq('slug', slug)
     .eq('is_active', true)
     .single()
 
-  if (!data) notFound()
+  if (!service) notFound()
 
-  const service = data as ServiceWithAvailability
+  const { data: availability } = await supabase
+    .from('availability')
+    .select('*')
+    .eq('service_id', service.id)
 
   return (
     <>
       <Navbar />
       <main className="max-w-4xl mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-          {/* Info del servicio */}
           <div>
             <h1 className="text-2xl font-semibold mb-3">{service.name}</h1>
             <p className="text-muted-foreground mb-6">{service.description}</p>
@@ -50,10 +47,9 @@ export default async function ServicioPage({ params }: Props) {
             </div>
           </div>
 
-          {/* Selector de turno */}
           <div>
             <h2 className="text-lg font-medium mb-4">Elegí tu turno</h2>
-            <BookingForm service={service} />
+            <BookingForm service={service} availability={availability ?? []} />
           </div>
         </div>
       </main>
