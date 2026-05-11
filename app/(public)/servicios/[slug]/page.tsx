@@ -2,6 +2,11 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Navbar } from '@/components/shared/Navbar'
 import { BookingForm } from '@/components/turnos/BookingForm'
+import type { Database } from '@/lib/supabase/types'
+
+type ServiceWithAvailability = Database['public']['Tables']['services']['Row'] & {
+  availability: Database['public']['Tables']['availability']['Row'][]
+}
 
 interface Props {
   params: Promise<{ slug: string }>
@@ -11,14 +16,16 @@ export default async function ServicioPage({ params }: Props) {
   const { slug } = await params
   const supabase = await createClient()
 
-  const { data: service } = await supabase
+  const { data } = await supabase
     .from('services')
     .select('*, availability(*)')
     .eq('slug', slug)
     .eq('is_active', true)
     .single()
 
-  if (!service) notFound()
+  if (!data) notFound()
+
+  const service = data as ServiceWithAvailability
 
   return (
     <>
