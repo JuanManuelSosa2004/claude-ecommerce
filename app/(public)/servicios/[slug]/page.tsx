@@ -2,10 +2,25 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Navbar } from '@/components/shared/Navbar'
 import { BookingForm } from '@/components/turnos/BookingForm'
-import type { Database } from '@/lib/supabase/types'
 
-type ServiceRow = Database['public']['Tables']['services']['Row']
-type AvailabilityRow = Database['public']['Tables']['availability']['Row']
+interface Service {
+  id: string
+  name: string
+  description: string | null
+  price_cents: number
+  duration_minutes: number | null
+  slug: string
+  is_active: boolean
+  created_at: string
+}
+
+interface Availability {
+  id: string
+  service_id: string
+  day_of_week: number
+  start_time: string
+  end_time: string
+}
 
 interface Props {
   params: Promise<{ slug: string }>
@@ -15,22 +30,19 @@ export default async function ServicioPage({ params }: Props) {
   const { slug } = await params
   const supabase = await createClient()
 
-  const { data } = await supabase
+  const { data: service } = await supabase
     .from('services')
     .select('*')
     .eq('slug', slug)
-    .single()
+    .eq('is_active', true)
+    .single() as { data: Service | null, error: unknown }
 
-  if (!data || !data.is_active) notFound()
+  if (!service) notFound()
 
-  const service = data as ServiceRow
-
-  const { data: availabilityData } = await supabase
+  const { data: availability } = await supabase
     .from('availability')
     .select('*')
-    .eq('service_id', service.id)
-
-  const availability = (availabilityData ?? []) as AvailabilityRow[]
+    .eq('service_id', service.id) as { data: Availability[] | null, error: unknown }
 
   return (
     <>
@@ -56,7 +68,7 @@ export default async function ServicioPage({ params }: Props) {
 
           <div>
             <h2 className="text-lg font-medium mb-4">Elegí tu turno</h2>
-            <BookingForm service={service} availability={availability} />
+            <BookingForm service={service} availability={availability ?? []} />
           </div>
         </div>
       </main>
